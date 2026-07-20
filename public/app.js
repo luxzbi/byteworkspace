@@ -70,7 +70,7 @@ $('heroStart').addEventListener('click', () => {
 });
 
 /* ── 앱 카드: 로그인 상태를 프래그먼트로 전달 ── */
-const APP_ORIGINS = ['https://bytenode109.vercel.app', 'https://byteexam109.vercel.app', 'https://bytetext.vercel.app', 'https://bytenode-account.vercel.app'];
+const APP_ORIGINS = ['https://bytenode109.vercel.app', 'https://byteexam109.vercel.app', 'https://bytetext.vercel.app', 'https://bytenode-account.vercel.app', 'https://byteslide.vercel.app', 'https://bytequiz.vercel.app', 'https://bytedocs.vercel.app'];
 document.querySelectorAll('.card[data-app]').forEach(card => {
   card.setAttribute('tabindex', '0');
   const open = () => {
