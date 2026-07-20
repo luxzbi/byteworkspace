@@ -12,8 +12,13 @@ const $ = id => document.getElementById(id);
 (() => {
   const m = location.hash.match(/bn_token=([^&]+)/);
   if (!m) return;
-  try { localStorage.setItem('bn_token', decodeURIComponent(m[1])); } catch (_) {}
+  let token = '';
+  try { token = decodeURIComponent(m[1]); localStorage.setItem('bn_token', token); } catch (_) {}
   sessionStorage.removeItem('bn_token');
+  if (token && new URLSearchParams(location.search).get('continue') === 'byteform') {
+    location.replace('https://byteform-wheat.vercel.app/#bn_token=' + encodeURIComponent(token));
+    return;
+  }
   history.replaceState(null, '', location.pathname + location.search);
 })();
 
