@@ -4,6 +4,7 @@
   --text:#eceef0; --text2:#8b9097; --text3:#5c6167; --accent:#8b7ff0;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
+[hidden]{display:none!important;}
 html,body{background:var(--bg);color:var(--text);font-family:"Segoe UI","Apple SD Gothic Neo",sans-serif;-webkit-font-smoothing:antialiased;}
 a{color:inherit;text-decoration:none;}
 
