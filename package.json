@@ -1,0 +1,12 @@
+{
+  "name": "byteworkspace",
+  "version": "1.0.0",
+  "description": "byte 제품군 홈 포털 — bytenode · byteexam · bytetext",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

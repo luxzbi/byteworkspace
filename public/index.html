@@ -1,0 +1,99 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Byte Workspace">
+<meta property="og:description" content="하나의 계정, 모든 Byte Workspace.">
+<meta property="og:image" content="https://byteworkspace.vercel.app/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<title>byteworkspace</title>
+<link rel="icon" href="/logo.png">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="/wordmark.png" alt="Byte Workspace" class="brandwordmark">
+  </div>
+  <nav class="topnav">
+    <a href="https://bytenode-account.vercel.app/developer" target="_blank" rel="noopener">개발자</a>
+    <a href="https://bytenode-account.vercel.app/terms" target="_blank" rel="noopener">약관</a>
+  </nav>
+  <div class="account" id="accountArea">
+    <button class="btn ghost" id="loginBtn" hidden>로그인</button>
+    <button class="btn solid" id="signupBtn" hidden>회원가입</button>
+    <div class="me" id="meArea" hidden>
+      <span class="avatar" id="meAvatar"></span>
+      <span class="mename" id="meName"></span>
+      <button class="btn ghost" id="logoutBtn">로그아웃</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <canvas id="artCanvas"></canvas>
+    <div class="hero-inner">
+      <h1>하나의 계정,<br>모든 Byte Workspace.</h1>
+      <p id="heroSub">bytenode 계정 하나로 글쓰기, 시험지 제작, 공동 편집까지.<br>지금 시작해 보세요.</p>
+      <div class="hero-cta">
+        <button class="btn solid lg" id="heroStart">시작하기</button>
+        <a class="btn ghost lg" href="#apps">앱 둘러보기</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="apps" id="apps">
+    <h2>앱</h2>
+    <div class="grid">
+      <a class="card" data-app="https://bytenode109.vercel.app/" rel="noopener">
+        <div class="ic">📝</div>
+        <div class="nm">bytenode</div>
+        <div class="ds">글을 쓰고 공유하는 블로그 플랫폼. KaTeX 수식, 표, 그래프, PPT 모드까지.</div>
+        <div class="go">열기 →</div>
+      </a>
+      <a class="card" data-app="https://byteexam109.vercel.app/" rel="noopener">
+        <div class="ic">📋</div>
+        <div class="nm">byteexam</div>
+        <div class="ds">AI로 고품질 시험지를 만들고 PDF로 바로 출력하는 시험지 제작 도구.</div>
+        <div class="go">열기 →</div>
+      </a>
+      <a class="card" data-app="https://bytetext.vercel.app/app" rel="noopener">
+        <div class="ic">✍️</div>
+        <div class="nm">bytetext</div>
+        <div class="ds">지원서·보고서·소논문 초안을 나란히 비교하며 다듬는 공동 글쓰기.</div>
+        <div class="go">열기 →</div>
+      </a>
+      <a class="card" data-app="https://bytenode-account.vercel.app/developer" rel="noopener">
+        <div class="ic">🔐</div>
+        <div class="nm">OAuth 서비스</div>
+        <div class="ds">내 앱에 "bytenode 계정으로 로그인"을 넣는 OAuth 개발자 콘솔. 앱 등록과 client_id·secret 발급.</div>
+        <div class="go">열기 →</div>
+      </a>
+    </div>
+  </section>
+
+  <section class="how">
+    <h2>어떻게 동작하나요</h2>
+    <div class="steps3">
+      <div class="s"><b>1. 한 번 로그인</b><span>bytenode 통합 계정으로 byteworkspace에 로그인합니다.</span></div>
+      <div class="s"><b>2. 앱 선택</b><span>위 카드에서 원하는 앱을 엽니다.</span></div>
+      <div class="s"><b>3. 자동 로그인</b><span>로그인 상태가 그대로 전달되어 바로 사용할 수 있습니다.</span></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>© bytenode · byteworkspace</span>
+  <a href="https://bytenode-account.vercel.app/terms" target="_blank" rel="noopener">이용약관</a>
+  <a href="https://bytenode-account.vercel.app/privacy" target="_blank" rel="noopener">개인정보처리방침</a>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>
