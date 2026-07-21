@@ -1,0 +1,90 @@
+/* 계정 설정 — 다크가 기본, 라이트/시스템 지원.
+   테마는 <html data-theme="dark|light">로 지정된다. */
+:root{
+  --bg:#0a0a0a; --bg2:#111214; --bg3:#191b1e;
+  --border:#232529; --border2:#33363c;
+  --text:#eceef0; --text2:#8b9097; --text3:#5c6167;
+  --accent:#8b7ff0; --danger:#f26b6b; --ok:#4ec98a;
+}
+:root[data-theme="light"]{
+  --bg:#f7f7f9; --bg2:#ffffff; --bg3:#f0f0f3;
+  --border:#e3e4e8; --border2:#d2d4da;
+  --text:#17181c; --text2:#5f636c; --text3:#8b9097;
+  --accent:#6b5ce0; --danger:#d64545; --ok:#2e9e63;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--text);font-family:"Segoe UI","Apple SD Gothic Neo",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+
+.btn{padding:8px 15px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
+  background:var(--bg3);color:var(--text);border:1px solid var(--border2);transition:.15s}
+.btn:hover{border-color:var(--accent)}
+.btn.solid{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.solid:hover{filter:brightness(1.1)}
+.btn.ghost{background:none;color:var(--text2)}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn.danger:hover{background:var(--danger);color:#fff}
+.btn:disabled{opacity:.5;cursor:default}
+
+/* 로그인 게이트 */
+.gate{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:24px}
+.gate h1{font-size:24px;letter-spacing:-.5px}
+.gate p{color:var(--text2);font-size:14px}
+
+/* 상단바 */
+.topbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:16px;height:58px;padding:0 22px;
+  background:var(--bg2);border-bottom:1px solid var(--border)}
+.topbar .back{font-size:13px;color:var(--text2)}
+.topbar .back:hover{color:var(--text)}
+.topbar .ttl{font-weight:700;font-size:15px}
+.topbar .who{margin-left:auto;display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)}
+
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent);overflow:hidden;flex:0 0 auto}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.avatar.lg{width:72px;height:72px;font-size:26px}
+
+/* 본문 */
+.wrap{max-width:680px;margin:0 auto;padding:28px 22px 80px;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px}
+.card h2{font-size:16px;letter-spacing:-.2px}
+.hint{font-size:12.5px;color:var(--text2);margin-top:5px;line-height:1.6}
+hr{border:0;border-top:1px solid var(--border);margin:18px 0}
+
+.avatar-row{display:flex;align-items:center;gap:16px;margin:18px 0 4px}
+.avatar-act{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sub{font-size:12px;color:var(--text3);width:100%;line-height:1.5}
+
+.fld{display:block;margin-top:16px}
+.fld>span{display:block;font-size:12.5px;color:var(--text2);margin-bottom:6px;font-weight:600}
+.fld input,.fld textarea{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);
+  border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;outline:none}
+.fld input:focus,.fld textarea:focus{border-color:var(--accent)}
+.fld input:disabled{color:var(--text3);cursor:not-allowed}
+.fld textarea{min-height:76px;resize:vertical}
+.fld small{display:block;font-size:11.5px;color:var(--text3);margin-top:6px;line-height:1.5}
+
+.row-end{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:18px}
+.row-between{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.row-between b{font-size:13.5px}
+.danger-text{color:var(--danger)}
+
+/* 테마 선택 */
+.themes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0 8px}
+.theme{background:var(--bg);border:1px solid var(--border2);border-radius:11px;padding:14px 12px;cursor:pointer;
+  font-family:inherit;color:var(--text);text-align:left;transition:.15s}
+.theme:hover{border-color:var(--accent)}
+.theme.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.theme b{display:block;font-size:13.5px}
+.theme span{display:block;font-size:11.5px;color:var(--text2);margin-top:3px}
+
+.msg{font-size:12.5px;color:var(--text2);margin-right:auto}
+.msg.err{color:var(--danger)}
+.msg.ok{color:var(--ok)}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:var(--bg3);color:var(--text);
+  border:1px solid var(--border2);border-radius:10px;padding:11px 18px;font-size:13.5px;z-index:20;
+  box-shadow:0 14px 34px rgba(0,0,0,.35);max-width:calc(100% - 40px)}
+
+@media(max-width:560px){ .themes{grid-template-columns:1fr} .wrap{padding:20px 16px 60px} }

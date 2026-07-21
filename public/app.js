@@ -69,6 +69,15 @@ async function initSession() {
 $('loginBtn').addEventListener('click', () => ssoGo('login'));
 $('signupBtn').addEventListener('click', () => ssoGo('welcome'));
 $('logoutBtn').addEventListener('click', () => { clearSession(); ME = null; initSession(); });
+/* 프로필(동그란 아바타·이름)을 누르면 계정 설정으로 이동, 돌아올 곳을 함께 넘긴다 */
+(() => {
+  const goAccount = () => { location.href = '/account?from=' + encodeURIComponent(location.href); };
+  const area = $('meArea');
+  if (!area) return;
+  area.style.cursor = 'pointer';
+  area.title = '계정 설정';
+  ['meAvatar', 'meName'].forEach(id => { const n = $(id); if (n) n.addEventListener('click', goAccount); });
+})();
 $('heroStart').addEventListener('click', () => {
   if (ME) document.getElementById('apps').scrollIntoView({ behavior: 'smooth' });
   else ssoGo('welcome');

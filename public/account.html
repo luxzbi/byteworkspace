@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>계정 설정 — Byte Workspace</title>
+  <link rel="icon" href="/logo.png">
+  <link rel="stylesheet" href="/account.css">
+  <script defer src="/account.js"></script>
+</head>
+<body>
+  <!-- 로그인 안내 -->
+  <div class="gate" id="gate" hidden>
+    <h1>계정 설정</h1>
+    <p id="gateMsg">Byte Workspace 통합 계정으로 로그인하세요.</p>
+    <button class="btn solid" id="gateLogin">로그인</button>
+  </div>
+
+  <div id="shell" hidden>
+    <header class="topbar">
+      <a class="back" id="backLink" href="/">← 돌아가기</a>
+      <span class="ttl">계정 설정</span>
+      <div class="who"><span class="avatar" id="topAvatar"></span><span id="topName"></span></div>
+    </header>
+
+    <main class="wrap">
+      <!-- 프로필 -->
+      <section class="card">
+        <h2>프로필</h2>
+        <p class="hint">모든 byte 서비스에서 함께 보이는 정보입니다.</p>
+
+        <div class="avatar-row">
+          <span class="avatar lg" id="bigAvatar"></span>
+          <div class="avatar-act">
+            <button class="btn" id="avatarBtn">이미지 변경</button>
+            <div class="sub">PNG·JPG·WEBP, 2MB 이하</div>
+          </div>
+          <input type="file" id="avatarInput" accept="image/png,image/jpeg,image/webp" hidden>
+        </div>
+
+        <label class="fld">
+          <span>아이디</span>
+          <input id="fUsername" disabled>
+          <small>아이디는 다른 서비스의 자료(byteexam 시험지 등)와 연결돼 있어 변경할 수 없습니다.</small>
+        </label>
+        <label class="fld">
+          <span>표시 이름</span>
+          <input id="fDisplay" maxlength="30" placeholder="다른 사용자에게 보이는 이름">
+        </label>
+        <label class="fld">
+          <span>소개</span>
+          <textarea id="fBio" maxlength="300" placeholder="자기소개 (선택)"></textarea>
+        </label>
+        <div class="row-end"><span class="msg" id="profileMsg"></span><button class="btn solid" id="saveProfile">저장</button></div>
+      </section>
+
+      <!-- 화면 -->
+      <section class="card">
+        <h2>화면</h2>
+        <p class="hint">이 설정은 Byte Workspace 계정에 저장되어 다른 기기에서도 유지됩니다.</p>
+        <div class="themes" id="themes">
+          <button class="theme" data-theme="system"><b>시스템</b><span>기기 설정을 따름</span></button>
+          <button class="theme" data-theme="dark"><b>다크</b><span>어두운 화면</span></button>
+          <button class="theme" data-theme="light"><b>라이트</b><span>밝은 화면</span></button>
+        </div>
+        <span class="msg" id="themeMsg"></span>
+      </section>
+
+      <!-- 보안 -->
+      <section class="card">
+        <h2>보안</h2>
+        <label class="fld"><span>현재 비밀번호</span><input id="pwCur" type="password" autocomplete="current-password"></label>
+        <label class="fld"><span>새 비밀번호</span><input id="pwNew" type="password" autocomplete="new-password" placeholder="6자 이상"></label>
+        <label class="fld"><span>새 비밀번호 확인</span><input id="pwNew2" type="password" autocomplete="new-password"></label>
+        <div class="row-end"><span class="msg" id="pwMsg"></span><button class="btn solid" id="savePw">비밀번호 변경</button></div>
+        <hr>
+        <div class="row-between">
+          <div><b>다른 모든 기기에서 로그아웃</b><div class="sub">이 기기만 로그인 상태로 남습니다.</div></div>
+          <button class="btn" id="logoutAll">실행</button>
+        </div>
+      </section>
+
+      <!-- 계정 -->
+      <section class="card">
+        <h2>계정</h2>
+        <div class="row-between">
+          <div><b>로그아웃</b><div class="sub" id="logoutHint">이 기기에서 로그아웃합니다.</div></div>
+          <button class="btn" id="logoutBtn">로그아웃</button>
+        </div>
+        <hr>
+        <div class="row-between">
+          <div><b class="danger-text">회원 탈퇴</b><div class="sub">계정과 모든 서비스의 자료가 삭제되며 되돌릴 수 없습니다.</div></div>
+          <button class="btn danger" id="deleteBtn">탈퇴</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>
