@@ -14,7 +14,13 @@ const ACCOUNT = 'https://bytenode-account.vercel.app';
 const NODE = process.env.BYTENODE_URL || 'https://bytenode109.vercel.app';
 
 app.disable('x-powered-by');
+app.set('trust proxy', 1);
 app.use(express.json({ limit: '512kb' }));
+
+/* 계정·신고·메일 API 속도 제한 */
+const rateLimit = require('express-rate-limit');
+app.use('/api', rateLimit({ windowMs: 60_000, limit: 90, standardHeaders: 'draft-7', legacyHeaders: false,
+  message: { error: '요청이 너무 잦습니다. 잠시 후 다시 시도하세요.' } }));
 
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
