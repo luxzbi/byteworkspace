@@ -85,6 +85,7 @@ async function boot() {
     if (d.prefs && d.prefs.theme) { localStorage.setItem('ws_theme', d.prefs.theme); applyTheme(d.prefs.theme); }
     $('gate').hidden = true; $('shell').hidden = false;
     paint();
+    loadMail();
     const back = returnTo();
     $('logoutHint').textContent = back.startsWith(location.origin)
       ? '이 기기에서 로그아웃합니다.' : '로그아웃 후 원래 보던 페이지로 돌아갑니다.';
@@ -166,6 +167,54 @@ $('logoutAll').addEventListener('click', async () => {
     if (d.token) { TOKEN = d.token; localStorage.setItem('bn_token', d.token); }
     toast('다른 기기에서 로그아웃했습니다.');
   } catch (e) { toast(e.message); }
+});
+
+/* ── 관리자 메일함 ── */
+function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+async function loadMail() {
+  const host = $('mailList');
+  try {
+    const d = await api('GET', '/mail');
+    host.textContent = '';
+    if (!d.items || !d.items.length) { host.append(el('div', 'empty', '받은 메일이 없습니다.')); $('mailUnread').hidden = true; return; }
+    if (d.unread) { $('mailUnread').textContent = d.unread; $('mailUnread').hidden = false; } else $('mailUnread').hidden = true;
+    d.items.forEach(m => {
+      const box = el('div', 'mail' + (m.readAt ? '' : ' unread'));
+      const head = el('div', 'mail-head');
+      head.append(el('span', 'subj', m.subject || '(제목 없음)'),
+                  el('span', 'when', new Date(m.createdAt).toLocaleString('ko-KR')));
+      const body = el('div', 'mail-body', m.body || '');
+      body.hidden = true;
+      head.addEventListener('click', async () => {
+        body.hidden = !body.hidden;
+        if (!body.hidden && !m.readAt) {
+          m.readAt = Date.now(); box.classList.remove('unread');
+          try { await api('POST', '/mail/' + m.id + '/read'); loadMailBadge(); } catch (_) {}
+        }
+      });
+      box.append(head, body); host.append(box);
+    });
+  } catch (e) { host.textContent = ''; host.append(el('div', 'empty', '메일을 불러오지 못했습니다.')); }
+}
+async function loadMailBadge() {
+  try { const d = await api('GET', '/mail'); if (d.unread) { $('mailUnread').textContent = d.unread; $('mailUnread').hidden = false; } else $('mailUnread').hidden = true; }
+  catch (_) {}
+}
+
+/* ── 사용자 신고 ── */
+$('sendReport').addEventListener('click', async () => {
+  const targetUsername = $('rTargetId').value.trim();
+  const targetDisplayName = $('rTargetName').value.trim();
+  const reason = $('rReason').value.trim();
+  if (!targetUsername && !targetDisplayName) return setMsg('reportMsg', '아이디 또는 표시 이름 중 하나는 입력하세요.', 'err');
+  if (reason.length < 5) return setMsg('reportMsg', '신고 사유를 5자 이상 적어 주세요.', 'err');
+  $('sendReport').disabled = true; setMsg('reportMsg', '접수 중…');
+  try {
+    await api('POST', '/reports', { targetUsername, targetDisplayName, reason });
+    $('rTargetId').value = $('rTargetName').value = $('rReason').value = '';
+    setMsg('reportMsg', '신고를 접수했습니다. 관리자가 확인합니다.', 'ok');
+  } catch (e) { setMsg('reportMsg', e.message, 'err'); }
+  $('sendReport').disabled = false;
 });
 
 $('logoutBtn').addEventListener('click', () => {

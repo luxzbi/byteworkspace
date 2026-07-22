@@ -69,7 +69,6 @@ async function initSession() {
       av.textContent = (ME.displayName || ME.username || '?').slice(0, 1);
     }
     $('heroSub').textContent = (ME.displayName || ME.username) + '님, 어떤 작업을 시작할까요?';
-    $('heroStart').textContent = '앱 열기';
     syncTheme();   /* 계정에 저장된 테마를 이 기기에도 반영 */
   } else {
     $('meArea').hidden = true;
@@ -91,8 +90,7 @@ $('logoutBtn').addEventListener('click', () => { clearSession(); ME = null; init
   ['meAvatar', 'meName'].forEach(id => { const n = $(id); if (n) n.addEventListener('click', goAccount); });
 })();
 $('heroStart').addEventListener('click', () => {
-  if (ME) document.getElementById('apps').scrollIntoView({ behavior: 'smooth' });
-  else ssoGo('welcome');
+  document.getElementById('apps').scrollIntoView({ behavior: 'smooth' });
 });
 
 /* ── 앱 카드: 로그인 상태를 프래그먼트로 전달 ── */

@@ -120,6 +120,48 @@ api.patch('/prefs', requireUser, async (req, res) => {
   } catch (e) { res.status(500).json({ error: '설정을 저장하지 못했습니다.' }); }
 });
 
+/* ── 사용자 신고 ── 관리 콘솔(byteadmin)이 같은 Firestore를 읽어 처리한다 */
+api.post('/reports', requireUser, async (req, res) => {
+  if (!db) return res.status(503).json({ error: '신고 저장소가 연결되지 않았습니다.' });
+  const targetUsername = String((req.body || {}).targetUsername || '').trim().slice(0, 40);
+  const targetDisplayName = String((req.body || {}).targetDisplayName || '').trim().slice(0, 40);
+  const reason = String((req.body || {}).reason || '').trim().slice(0, 2000);
+  if (!targetUsername && !targetDisplayName) return res.status(400).json({ error: '신고할 사람의 아이디 또는 표시 이름 중 하나는 입력해야 합니다.' });
+  if (reason.length < 5) return res.status(400).json({ error: '신고 사유를 5자 이상 적어 주세요.' });
+  try {
+    /* 도배 방지: 최근 10분 내 같은 사람이 3건 넘게 넣지 못하게 */
+    const since = Date.now() - 10 * 60_000;
+    const recent = await db.collection('userReports').where('reporterId', '==', req.me.id).where('createdAt', '>', since).get();
+    if (recent.size >= 3) return res.status(429).json({ error: '신고가 너무 잦습니다. 잠시 후 다시 시도해 주세요.' });
+    await db.collection('userReports').add({
+      reporterId: req.me.id, reporterUsername: req.me.username,
+      targetUsername, targetDisplayName, reason,
+      status: 'open', createdAt: Date.now()
+    });
+    res.status(201).json({ ok: true });
+  } catch (e) { console.error('[report]', e.message); res.status(500).json({ error: '신고를 접수하지 못했습니다.' }); }
+});
+
+/* ── 관리자에게 받은 메일함(읽기 전용) ── */
+api.get('/mail', requireUser, async (req, res) => {
+  if (!db) return res.json({ items: [], enabled: false });
+  try {
+    const snap = await db.collection('userMail').where('toUserId', '==', req.me.id).get();
+    const items = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt).slice(0, 100);
+    res.json({ enabled: true, items, unread: items.filter(m => !m.readAt).length });
+  } catch (e) { console.error('[mail list]', e.message); res.status(500).json({ error: '메일을 불러오지 못했습니다.' }); }
+});
+api.post('/mail/:id/read', requireUser, async (req, res) => {
+  if (!db) return res.status(503).json({ error: '메일 저장소가 연결되지 않았습니다.' });
+  try {
+    const ref = db.collection('userMail').doc(req.params.id);
+    const doc = await ref.get();
+    if (!doc.exists || doc.data().toUserId !== req.me.id) return res.status(404).json({ error: '메일을 찾을 수 없습니다.' });
+    if (!doc.data().readAt) await ref.update({ readAt: Date.now() });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: '처리하지 못했습니다.' }); }
+});
+
 /* 회원 탈퇴 */
 api.delete('/account', requireUser, async (req, res) => {
   const { username, password } = req.body || {};

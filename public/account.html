@@ -69,6 +69,23 @@
         <span class="msg" id="themeMsg"></span>
       </section>
 
+      <!-- 관리자 메일함 -->
+      <section class="card">
+        <h2>관리자 메일함 <span class="pill" id="mailUnread" hidden>0</span></h2>
+        <p class="hint">관리자가 회원님께 보낸 안내입니다. 이곳에서 답장할 수는 없습니다.</p>
+        <div id="mailList" class="mail-list"><div class="empty">불러오는 중…</div></div>
+      </section>
+
+      <!-- 사용자 신고 -->
+      <section class="card">
+        <h2>사용자 신고</h2>
+        <p class="hint">부적절한 이용자를 관리자에게 알립니다. 아이디와 표시 이름 중 <b>하나만 적어도</b> 접수됩니다.</p>
+        <label class="fld"><span>신고할 사람 아이디</span><input id="rTargetId" maxlength="40" placeholder="예: someuser"></label>
+        <label class="fld"><span>신고할 사람 표시 이름</span><input id="rTargetName" maxlength="40" placeholder="예: 홍길동"></label>
+        <label class="fld"><span>신고 사유</span><textarea id="rReason" maxlength="2000" placeholder="어떤 일이 있었는지 구체적으로 적어 주세요."></textarea></label>
+        <div class="row-end"><span class="msg" id="reportMsg"></span><button class="btn danger" id="sendReport">신고 접수</button></div>
+      </section>
+
       <!-- 보안 -->
       <section class="card">
         <h2>보안</h2>
