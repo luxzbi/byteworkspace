@@ -47,13 +47,12 @@ function toast(msg) {
 function setMsg(id, text, kind) { const n = $(id); n.textContent = text; n.className = 'msg' + (kind ? ' ' + kind : ''); }
 
 /* ── 테마 ── */
-const media = window.matchMedia('(prefers-color-scheme: light)');
+/* 테마 적용은 theme.js(공용)가 담당하고, 여기서는 선택 표시만 맞춘다 */
 function applyTheme(t) {
   THEME = t;
-  document.documentElement.dataset.theme = t === 'system' ? (media.matches ? 'light' : 'dark') : t;
+  if (window.wsTheme) window.wsTheme.set(t);
   document.querySelectorAll('.theme').forEach(b => b.classList.toggle('on', b.dataset.theme === t));
 }
-media.addEventListener('change', () => { if (THEME === 'system') applyTheme('system'); });
 
 /* ── 아바타 ── */
 function paintAvatar(node, user) {

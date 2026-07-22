@@ -31,6 +31,17 @@ function ssoGo(page) {
   location.href = ACCOUNT + '/' + page + '?redirect=' + encodeURIComponent(location.origin + '/');
 }
 
+/* 계정에 저장해 둔 테마를 가져와 적용한다(다른 기기에서 바꿔도 따라온다) */
+async function syncTheme() {
+  try {
+    const r = await fetch('/api/profile', { headers: { Authorization: 'Bearer ' + getToken() } });
+    if (!r.ok) return;
+    const d = await r.json();
+    const t = d.prefs && d.prefs.theme;
+    if (t && window.wsTheme && t !== window.wsTheme.get()) window.wsTheme.set(t);
+  } catch (_) {}
+}
+
 /* ── 로그인 상태 UI ── */
 let ME = null;
 async function initSession() {
@@ -59,6 +70,7 @@ async function initSession() {
     }
     $('heroSub').textContent = (ME.displayName || ME.username) + '님, 어떤 작업을 시작할까요?';
     $('heroStart').textContent = '앱 열기';
+    syncTheme();   /* 계정에 저장된 테마를 이 기기에도 반영 */
   } else {
     $('meArea').hidden = true;
     $('loginBtn').hidden = false;
@@ -108,6 +120,14 @@ initSession();
   if (!cv) return;
   const ctx = cv.getContext('2d');
   let W = 0, H = 0, raf = null, lines = [];
+  /* 배경·선 밝기를 테마 토큰에서 읽어 라이트 모드에서도 보이게 한다 */
+  const tok = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  let ART = tok('--art') || '#0a0a0a', LUM = tok('--art-line-l') || '38%', ALPHA = tok('--art-alpha') || '.13';
+  const readTokens = () => { ART = tok('--art') || ART; LUM = tok('--art-line-l') || LUM; ALPHA = tok('--art-alpha') || ALPHA; };
+  const isLight = () => document.documentElement.getAttribute('data-theme') === 'light';
+  /* 시스템 테마가 바뀌면 아트도 새 색으로 다시 그린다 */
+  new MutationObserver(() => { readTokens(); resize(); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   const DPR = Math.min(window.devicePixelRatio || 1, 2);
   const N = 70;
 
@@ -118,7 +138,7 @@ initSession();
       life: 200 + Math.random() * 360,
       hue: 235 + Math.random() * 50,
       sat: 30 + Math.random() * 45,
-      lum: 38 + Math.random() * 28,
+      lum: parseFloat(LUM) + Math.random() * 22,
       w: .4 + Math.random() * 1.3,
       sp: .3 + Math.random() * .8
     };
@@ -133,22 +153,24 @@ initSession();
     W = r.width; H = r.height;
     cv.width = W * DPR; cv.height = H * DPR;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = ART; ctx.fillRect(0, 0, W, H);
     lines = Array.from({ length: N }, () => spawn(true));
     if (!raf) raf = requestAnimationFrame(tick);
   }
   const t0 = performance.now();
   function tick(now) {
     const t = now - t0;
-    ctx.fillStyle = 'rgba(10,10,10,.04)';
+    ctx.fillStyle = ART; ctx.globalAlpha = .04;
     ctx.fillRect(0, 0, W, H);
-    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 1;
+    /* 밝은 배경에서 'lighter'는 선이 하얗게 날아가므로 일반 합성으로 그린다 */
+    ctx.globalCompositeOperation = isLight() ? 'source-over' : 'lighter';
     for (let i = 0; i < lines.length; i++) {
       const p = lines[i];
       const a = angle(p.x, p.y, t);
       const nx = p.x + Math.cos(a) * p.sp;
       const ny = p.y + Math.sin(a) * p.sp;
-      ctx.strokeStyle = 'hsla(' + p.hue + ',' + p.sat + '%,' + p.lum + '%,.13)';
+      ctx.strokeStyle = 'hsla(' + p.hue + ',' + p.sat + '%,' + p.lum + '%,' + ALPHA + ')';
       ctx.lineWidth = p.w;
       ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(nx, ny); ctx.stroke();
       p.x = nx; p.y = ny; p.life--;
