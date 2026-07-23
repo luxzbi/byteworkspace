@@ -26,6 +26,8 @@ a{color:inherit;text-decoration:none;}
 }
 .brand{display:flex;align-items:center;}
 .brandwordmark{height:26px;width:auto;object-fit:contain;display:block;}
+/* 워드마크는 흰색 이미지라 라이트 배경에서 안 보인다 → 반전해 검게 */
+:root[data-theme="light"] .brandwordmark{filter:invert(1);}
 .topnav{display:flex;gap:18px;font-size:13px;color:var(--text2);}
 .topnav a:hover{color:var(--text);}
 .account{margin-left:auto;display:flex;align-items:center;gap:8px;}
