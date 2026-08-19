@@ -187,6 +187,17 @@ api.post('/reports', requireUser, async (req, res) => {
 });
 
 /* ── 관리자에게 받은 메일함(읽기 전용) ── */
+api.get('/mail/unread', requireUser, async (req, res) => {
+  if (!db) return res.json({ unread: 0, enabled: false });
+  try {
+    const snap = await db.collection('userMail').where('toUserId', '==', req.me.id).get();
+    res.json({ enabled: true, unread: snap.docs.filter(d => !d.data().readAt).length });
+  } catch (e) {
+    console.error('[mail unread]', e.message);
+    res.status(500).json({ error: '메일 알림을 확인하지 못했습니다.' });
+  }
+});
+
 api.get('/mail', requireUser, async (req, res) => {
   if (!db) return res.json({ items: [], enabled: false });
   try {

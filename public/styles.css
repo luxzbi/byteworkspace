@@ -38,6 +38,13 @@ a{color:inherit;text-decoration:none;}
   overflow:hidden;
 }
 .avatar img{width:100%;height:100%;object-fit:cover;}
+.mail-alert{
+  width:18px;height:18px;border-radius:50%;border:0;padding:0;margin-left:-5px;
+  display:inline-flex;align-items:center;justify-content:center;background:#e86b70;color:#fff;
+  font:800 12px/1 "Segoe UI","Apple SD Gothic Neo",sans-serif;cursor:pointer;
+  box-shadow:0 0 0 2px var(--bg2);
+}
+.mail-alert:hover{filter:brightness(1.08)}
 .mename{font-size:13px;color:var(--text2);}
 
 .btn{
