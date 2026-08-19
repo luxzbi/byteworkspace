@@ -5,6 +5,8 @@
    - byteworkspace 고유 설정(테마 등)만 이 서버의 DB(Firestore)에 저장한다. */
 const express = require('express');
 const path = require('path');
+const multer = require('multer');
+const { mailExpiresAt, extendedMailExpiry } = require('./mail-retention');
 
 const app = express();
 const PUB = path.join(__dirname, 'public');
@@ -35,8 +37,7 @@ app.use((req, res, next) => {
     "script-src 'self'",
     "style-src 'self'",
     "img-src 'self' data: https:",
-    /* 아바타는 multipart라 브라우저가 bytenode로 직접 올린다 */
-    `connect-src 'self' ${ACCOUNT} ${NODE}`,
+    `connect-src 'self' ${ACCOUNT}`,
     "font-src 'self'",
     "base-uri 'none'",
     "form-action 'self'",
@@ -83,8 +84,54 @@ async function requireUser(req, res, next) {
   } catch { res.status(502).json({ error: '계정 서버에 연결할 수 없습니다.' }); }
 }
 
+const AVATAR_MIME = /^image\/(jpeg|png|webp)$/;
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => AVATAR_MIME.test(file.mimetype) ? cb(null, true) : cb(new Error('PNG, JPG, WEBP 이미지만 사용할 수 있습니다.')),
+  limits: { fileSize: 2 * 1024 * 1024, files: 1 }
+}).single('avatar');
+
+function acceptAvatar(req, res, next) {
+  avatarUpload(req, res, err => {
+    if (!err) return next();
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: '프로필 이미지는 2MB 이하여야 합니다.' });
+    }
+    return res.status(400).json({ error: err.message || '프로필 이미지를 확인할 수 없습니다.' });
+  });
+}
+
 const relay = (res, r) => res.status(r.status).json(r.data);
 const api = express.Router();
+
+/* 만료 메일 삭제 + 기존 읽은 메일의 만료일 보정. userId가 없으면 전체 정리한다. */
+async function cleanupExpiredMail(userId) {
+  if (!db) return { deleted: 0, backfilled: 0, items: [] };
+  let query = db.collection('userMail');
+  if (userId) query = query.where('toUserId', '==', userId);
+  const snap = await query.get();
+  const now = Date.now();
+  let batch = db.batch(), operations = 0, deleted = 0, backfilled = 0;
+  const items = [];
+  async function flush() {
+    if (!operations) return;
+    await batch.commit();
+    batch = db.batch(); operations = 0;
+  }
+  for (const doc of snap.docs) {
+    const mail = doc.data();
+    if (!mail.readAt) { items.push({ id: doc.id, ...mail, expiresAt: null }); continue; }
+    const expiresAt = mailExpiresAt(mail);
+    if (expiresAt <= now) { batch.delete(doc.ref); deleted++; operations++; }
+    else {
+      if (!mail.expiresAt) { batch.update(doc.ref, { expiresAt }); backfilled++; operations++; }
+      items.push({ id: doc.id, ...mail, expiresAt });
+    }
+    if (operations >= 400) await flush();
+  }
+  await flush();
+  return { deleted, backfilled, items };
+}
 
 /* 프로필 조회: 통합계정 정보 + 이 포털의 설정을 합쳐서 준다 */
 api.get('/profile', requireUser, async (req, res) => {
@@ -102,6 +149,27 @@ api.get('/profile', requireUser, async (req, res) => {
 api.patch('/profile', requireUser, async (req, res) => {
   const { displayName, bio } = req.body || {};
   relay(res, await callNode('/api/auth/me', { method: 'PATCH', token: req.token, body: { displayName, bio } }));
+});
+
+/* 프로필 이미지는 같은 출처에서 받은 뒤 원본 계정 서버로 전달한다. */
+api.post('/avatar', requireUser, acceptAvatar, async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: '파일이 없습니다.' });
+  try {
+    const form = new FormData();
+    form.append('avatar', new Blob([req.file.buffer], { type: req.file.mimetype }), req.file.originalname || 'avatar');
+    const r = await fetch(NODE + '/api/auth/avatar', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + req.token },
+      body: form,
+      signal: AbortSignal.timeout(20_000)
+    });
+    const text = await r.text();
+    let data; try { data = text ? JSON.parse(text) : {}; } catch { data = { error: '응답을 해석할 수 없습니다.' }; }
+    res.status(r.status).json(data);
+  } catch (e) {
+    console.error('[avatar proxy]', e.message);
+    res.status(502).json({ error: '프로필 이미지 서버에 연결할 수 없습니다.' });
+  }
 });
 
 /* 비밀번호 변경 — 성공하면 새 토큰이 내려온다(기존 세션 무효화) */
@@ -149,11 +217,22 @@ api.post('/reports', requireUser, async (req, res) => {
 });
 
 /* ── 관리자에게 받은 메일함(읽기 전용) ── */
+api.get('/mail/unread', requireUser, async (req, res) => {
+  if (!db) return res.json({ unread: 0, enabled: false });
+  try {
+    const state = await cleanupExpiredMail(req.me.id);
+    res.json({ enabled: true, unread: state.items.filter(m => !m.readAt).length });
+  } catch (e) {
+    console.error('[mail unread]', e.message);
+    res.status(500).json({ error: '메일 알림을 확인하지 못했습니다.' });
+  }
+});
+
 api.get('/mail', requireUser, async (req, res) => {
   if (!db) return res.json({ items: [], enabled: false });
   try {
-    const snap = await db.collection('userMail').where('toUserId', '==', req.me.id).get();
-    const items = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt).slice(0, 100);
+    const state = await cleanupExpiredMail(req.me.id);
+    const items = state.items.sort((a, b) => b.createdAt - a.createdAt).slice(0, 100);
     res.json({ enabled: true, items, unread: items.filter(m => !m.readAt).length });
   } catch (e) { console.error('[mail list]', e.message); res.status(500).json({ error: '메일을 불러오지 못했습니다.' }); }
 });
@@ -161,11 +240,57 @@ api.post('/mail/:id/read', requireUser, async (req, res) => {
   if (!db) return res.status(503).json({ error: '메일 저장소가 연결되지 않았습니다.' });
   try {
     const ref = db.collection('userMail').doc(req.params.id);
-    const doc = await ref.get();
-    if (!doc.exists || doc.data().toUserId !== req.me.id) return res.status(404).json({ error: '메일을 찾을 수 없습니다.' });
-    if (!doc.data().readAt) await ref.update({ readAt: Date.now() });
-    res.json({ ok: true });
+    const result = await db.runTransaction(async tx => {
+      const doc = await tx.get(ref);
+      if (!doc.exists || doc.data().toUserId !== req.me.id) return null;
+      const mail = doc.data();
+      const readAt = Number(mail.readAt) || Date.now();
+      const expiresAt = mailExpiresAt({ ...mail, readAt });
+      if (expiresAt <= Date.now()) { tx.delete(ref); return { expired: true }; }
+      if (!mail.readAt || !mail.expiresAt) tx.update(ref, { readAt, expiresAt });
+      return { readAt, expiresAt };
+    });
+    if (!result) return res.status(404).json({ error: '메일을 찾을 수 없습니다.' });
+    if (result.expired) return res.status(410).json({ error: '보관 기간이 끝난 메일입니다.' });
+    res.json({ ok: true, ...result });
   } catch (e) { res.status(500).json({ error: '처리하지 못했습니다.' }); }
+});
+
+api.post('/mail/:id/extend', requireUser, async (req, res) => {
+  if (!db) return res.status(503).json({ error: '메일 저장소가 연결되지 않았습니다.' });
+  try {
+    const ref = db.collection('userMail').doc(req.params.id);
+    const result = await db.runTransaction(async tx => {
+      const doc = await tx.get(ref);
+      if (!doc.exists || doc.data().toUserId !== req.me.id) return null;
+      const mail = doc.data();
+      if (!mail.readAt) return { unread: true };
+      const currentExpiry = mailExpiresAt(mail);
+      if (currentExpiry <= Date.now()) { tx.delete(ref); return { expired: true }; }
+      const expiresAt = extendedMailExpiry(mail);
+      tx.update(ref, { expiresAt });
+      return { expiresAt };
+    });
+    if (!result) return res.status(404).json({ error: '메일을 찾을 수 없습니다.' });
+    if (result.unread) return res.status(400).json({ error: '메일을 먼저 읽어 주세요.' });
+    if (result.expired) return res.status(410).json({ error: '이미 보관 기간이 끝난 메일입니다.' });
+    res.json({ ok: true, expiresAt: result.expiresAt, extendedDays: 7 });
+  } catch (e) {
+    console.error('[mail extend]', e.message);
+    res.status(500).json({ error: '보관 기간을 연장하지 못했습니다.' });
+  }
+});
+
+api.get('/cron/mail-cleanup', async (req, res) => {
+  const secret = process.env.CRON_SECRET || '';
+  if (!secret || req.headers.authorization !== 'Bearer ' + secret) return res.status(401).json({ error: '인증이 필요합니다.' });
+  try {
+    const { deleted, backfilled } = await cleanupExpiredMail();
+    res.json({ ok: true, deleted, backfilled });
+  } catch (e) {
+    console.error('[mail cleanup]', e.message);
+    res.status(500).json({ error: '메일을 정리하지 못했습니다.' });
+  }
 });
 
 /* 회원 탈퇴 */

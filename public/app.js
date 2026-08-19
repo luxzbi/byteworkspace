@@ -44,6 +44,21 @@ async function syncTheme() {
 
 /* ── 로그인 상태 UI ── */
 let ME = null;
+let MAIL_TIMER = null;
+
+async function refreshMailAlert() {
+  const badge = $('meMailAlert');
+  if (!badge || !ME || !getToken()) { if (badge) badge.hidden = true; return; }
+  try {
+    const r = await fetch('/api/mail/unread', { headers: { Authorization: 'Bearer ' + getToken() } });
+    const d = r.ok ? await r.json() : { unread: 0 };
+    const unread = Math.max(0, Number(d.unread) || 0);
+    badge.hidden = unread === 0;
+    badge.title = unread ? `읽지 않은 관리자 메일 ${unread}개` : '읽지 않은 관리자 메일 없음';
+    badge.setAttribute('aria-label', badge.title);
+  } catch (_) { badge.hidden = true; }
+}
+
 async function initSession() {
   const t = getToken();
   if (t) {
@@ -70,12 +85,17 @@ async function initSession() {
     }
     $('heroSub').textContent = (ME.displayName || ME.username) + '님, 어떤 작업을 시작할까요?';
     syncTheme();   /* 계정에 저장된 테마를 이 기기에도 반영 */
+    refreshMailAlert();
   } else {
     $('meArea').hidden = true;
     $('loginBtn').hidden = false;
     $('signupBtn').hidden = false;
+    $('meMailAlert').hidden = true;
   }
 }
+
+if (!MAIL_TIMER) MAIL_TIMER = setInterval(() => { if (!document.hidden) refreshMailAlert(); }, 60_000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshMailAlert(); });
 
 $('loginBtn').addEventListener('click', () => ssoGo('login'));
 $('signupBtn').addEventListener('click', () => ssoGo('welcome'));
@@ -87,7 +107,7 @@ $('logoutBtn').addEventListener('click', () => { clearSession(); ME = null; init
   if (!area) return;
   area.style.cursor = 'pointer';
   area.title = '계정 설정';
-  ['meAvatar', 'meName'].forEach(id => { const n = $(id); if (n) n.addEventListener('click', goAccount); });
+  ['meAvatar', 'meMailAlert', 'meName'].forEach(id => { const n = $(id); if (n) n.addEventListener('click', goAccount); });
 })();
 $('heroStart').addEventListener('click', () => {
   document.getElementById('apps').scrollIntoView({ behavior: 'smooth' });
