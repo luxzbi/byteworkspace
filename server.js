@@ -5,6 +5,7 @@
    - byteworkspace 고유 설정(테마 등)만 이 서버의 DB(Firestore)에 저장한다. */
 const express = require('express');
 const path = require('path');
+const multer = require('multer');
 
 const app = express();
 const PUB = path.join(__dirname, 'public');
@@ -35,8 +36,7 @@ app.use((req, res, next) => {
     "script-src 'self'",
     "style-src 'self'",
     "img-src 'self' data: https:",
-    /* 아바타는 multipart라 브라우저가 bytenode로 직접 올린다 */
-    `connect-src 'self' ${ACCOUNT} ${NODE}`,
+    `connect-src 'self' ${ACCOUNT}`,
     "font-src 'self'",
     "base-uri 'none'",
     "form-action 'self'",
@@ -83,6 +83,23 @@ async function requireUser(req, res, next) {
   } catch { res.status(502).json({ error: '계정 서버에 연결할 수 없습니다.' }); }
 }
 
+const AVATAR_MIME = /^image\/(jpeg|png|webp)$/;
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => AVATAR_MIME.test(file.mimetype) ? cb(null, true) : cb(new Error('PNG, JPG, WEBP 이미지만 사용할 수 있습니다.')),
+  limits: { fileSize: 2 * 1024 * 1024, files: 1 }
+}).single('avatar');
+
+function acceptAvatar(req, res, next) {
+  avatarUpload(req, res, err => {
+    if (!err) return next();
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: '프로필 이미지는 2MB 이하여야 합니다.' });
+    }
+    return res.status(400).json({ error: err.message || '프로필 이미지를 확인할 수 없습니다.' });
+  });
+}
+
 const relay = (res, r) => res.status(r.status).json(r.data);
 const api = express.Router();
 
@@ -102,6 +119,27 @@ api.get('/profile', requireUser, async (req, res) => {
 api.patch('/profile', requireUser, async (req, res) => {
   const { displayName, bio } = req.body || {};
   relay(res, await callNode('/api/auth/me', { method: 'PATCH', token: req.token, body: { displayName, bio } }));
+});
+
+/* 프로필 이미지는 같은 출처에서 받은 뒤 원본 계정 서버로 전달한다. */
+api.post('/avatar', requireUser, acceptAvatar, async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: '파일이 없습니다.' });
+  try {
+    const form = new FormData();
+    form.append('avatar', new Blob([req.file.buffer], { type: req.file.mimetype }), req.file.originalname || 'avatar');
+    const r = await fetch(NODE + '/api/auth/avatar', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + req.token },
+      body: form,
+      signal: AbortSignal.timeout(20_000)
+    });
+    const text = await r.text();
+    let data; try { data = text ? JSON.parse(text) : {}; } catch { data = { error: '응답을 해석할 수 없습니다.' }; }
+    res.status(r.status).json(data);
+  } catch (e) {
+    console.error('[avatar proxy]', e.message);
+    res.status(502).json({ error: '프로필 이미지 서버에 연결할 수 없습니다.' });
+  }
 });
 
 /* 비밀번호 변경 — 성공하면 새 토큰이 내려온다(기존 세션 무효화) */

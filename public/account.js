@@ -123,19 +123,19 @@ $('saveProfile').addEventListener('click', async () => {
   $('saveProfile').disabled = false;
 });
 
-/* 아바타는 multipart 업로드라 bytenode(원본)로 직접 보낸다 */
-const NODE = 'https://bytenode109.vercel.app';
+/* 아바타는 같은 출처의 서버를 거쳐 원본 계정 서버에 저장한다. */
 $('avatarBtn').addEventListener('click', () => $('avatarInput').click());
 $('avatarInput').addEventListener('change', async e => {
   const file = e.target.files && e.target.files[0];
   e.target.value = '';
   if (!file) return;
+  if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) return toast('PNG, JPG, WEBP 이미지만 사용할 수 있습니다.');
   if (file.size > 2 * 1024 * 1024) return toast('2MB 이하 이미지만 올릴 수 있습니다.');
   const fd = new FormData();
   fd.append('avatar', file);
   $('avatarBtn').disabled = true;
   try {
-    const r = await fetch(NODE + '/api/auth/avatar', { method: 'POST', headers: { Authorization: 'Bearer ' + getToken() }, body: fd });
+    const r = await fetch('/api/avatar', { method: 'POST', headers: { Authorization: 'Bearer ' + getToken() }, body: fd });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || '업로드에 실패했습니다.');
     ME.avatar = d.url; paint(); toast('아바타를 변경했습니다.');
