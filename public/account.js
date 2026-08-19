@@ -177,6 +177,32 @@ $('logoutAll').addEventListener('click', async () => {
 
 /* ── 관리자 메일함 ── */
 function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+function mailRetentionControls(mail) {
+  const node = el('div', 'mail-actions');
+  const expiry = el('span', 'mail-expiry');
+  const extend = el('button', 'btn mail-extend', '7일 연장');
+  extend.type = 'button';
+  function paint() {
+    node.hidden = !mail.readAt;
+    expiry.textContent = mail.expiresAt
+      ? new Date(mail.expiresAt).toLocaleString('ko-KR') + '에 자동 삭제'
+      : '읽은 날부터 14일간 보관';
+  }
+  extend.addEventListener('click', async () => {
+    extend.disabled = true;
+    try {
+      const d = await api('POST', '/mail/' + mail.id + '/extend');
+      mail.expiresAt = d.expiresAt;
+      paint();
+      toast('메일 보관 기간을 7일 연장했습니다.');
+    } catch (e) { toast(e.message); }
+    extend.disabled = false;
+  });
+  node.append(expiry, extend);
+  paint();
+  return { node, paint };
+}
+
 async function loadMail() {
   const host = $('mailList');
   try {
@@ -189,13 +215,22 @@ async function loadMail() {
       const head = el('div', 'mail-head');
       head.append(el('span', 'subj', m.subject || '(제목 없음)'),
                   el('span', 'when', new Date(m.createdAt).toLocaleString('ko-KR')));
-      const body = el('div', 'mail-body', m.body || '');
+      const body = el('div', 'mail-body');
+      const message = el('div', 'mail-message', m.body || '');
+      const retention = mailRetentionControls(m);
+      body.append(message, retention.node);
       body.hidden = true;
       head.addEventListener('click', async () => {
         body.hidden = !body.hidden;
         if (!body.hidden && !m.readAt) {
-          m.readAt = Date.now(); box.classList.remove('unread');
-          try { await api('POST', '/mail/' + m.id + '/read'); loadMailBadge(); } catch (_) {}
+          try {
+            const state = await api('POST', '/mail/' + m.id + '/read');
+            m.readAt = state.readAt;
+            m.expiresAt = state.expiresAt;
+            box.classList.remove('unread');
+            retention.paint();
+            loadMailBadge();
+          } catch (e) { toast(e.message); }
         }
       });
       box.append(head, body); host.append(box);
@@ -203,7 +238,7 @@ async function loadMail() {
   } catch (e) { host.textContent = ''; host.append(el('div', 'empty', '메일을 불러오지 못했습니다.')); }
 }
 async function loadMailBadge() {
-  try { const d = await api('GET', '/mail'); if (d.unread) { $('mailUnread').textContent = d.unread; $('mailUnread').hidden = false; } else $('mailUnread').hidden = true; }
+  try { const d = await api('GET', '/mail/unread'); if (d.unread) { $('mailUnread').textContent = d.unread; $('mailUnread').hidden = false; } else $('mailUnread').hidden = true; }
   catch (_) {}
 }
 
