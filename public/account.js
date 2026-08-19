@@ -66,10 +66,16 @@ function paintAvatar(node, user) {
 }
 
 function paint() {
+  const accountTypes = {
+    class: '학급특색사업 — for class',
+    scivill: '동아리 — for scivill',
+    dshs: '대신고 — for dshs'
+  };
   $('topName').textContent = ME.displayName || ME.username;
   paintAvatar($('topAvatar'), ME);
   paintAvatar($('bigAvatar'), ME);
   $('fUsername').value = ME.username || '';
+  $('fAccountType').value = accountTypes[ME.accountType] || '일반';
   $('fDisplay').value = ME.displayName || '';
   $('fBio').value = ME.bio || '';
 }
